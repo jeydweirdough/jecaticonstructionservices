@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { CONTACT_INFO } from '../constants';
-import { Trash2, Download, Mail, Copy, FileText, ArrowLeft, Plus, Minus, MapPin, AlertCircle, Search } from 'lucide-react';
+import { Trash2, Download, Mail, Copy, FileText, ArrowLeft, Plus, Minus, MapPin, AlertCircle, Search, X } from 'lucide-react';
 // @ts-ignore
 import html2canvas from 'html2canvas';
 // @ts-ignore
@@ -121,6 +121,7 @@ const Quote: React.FC = () => {
   const [showMap, setShowMap] = useState(!!initialMarker); // Show map by default if we have a saved location
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   
   // Customer Info State - Initialized from LocalStorage
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>(() => {
@@ -189,7 +190,7 @@ const Quote: React.FC = () => {
     }
   };
 
-  const handleLocationSelect = (latlng: { lat: number, lng: number }, displayName?: string) => {
+  const handleLocationSelect = async (latlng: { lat: number, lng: number }, displayName?: string) => {
     setMarkerPosition(latlng);
     
     const dist = calculateDistance(HQ_POSITION[0], HQ_POSITION[1], latlng.lat, latlng.lng);
@@ -197,11 +198,41 @@ const Quote: React.FC = () => {
     
     const fee = calculateMobilizationFee(dist);
     setMobilizationFee(fee);
+
+    let address = displayName;
+
+    if (!address) {
+        // Show loading state for address
+        setCustomerInfo((prev: CustomerInfo) => ({
+            ...prev, 
+            address: "Locating address..."
+        }));
+
+        try {
+            // Reverse geocode to get the address name using OpenStreetMap Nominatim
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`);
+            const data = await response.json();
+            
+            if (data && data.display_name) {
+                address = data.display_name;
+            }
+        } catch (error) {
+            console.error("Error fetching address:", error);
+            // Fallback if fetch fails
+        }
+    }
     
     setCustomerInfo((prev: CustomerInfo) => ({
         ...prev, 
-        address: displayName || `Pinned Location (${dist.toFixed(1)} km from HQ)`
+        address: address || `Pinned Location (${dist.toFixed(1)} km from HQ)`
     }));
+  };
+  
+  const handleRemoveLocation = () => {
+    setMarkerPosition(null);
+    setDistanceKm(0);
+    setMobilizationFee(5000); // Default base estimate
+    setCustomerInfo(prev => ({ ...prev, address: '' }));
   };
 
   const removeFromQuote = (id: string) => {
@@ -286,7 +317,20 @@ const Quote: React.FC = () => {
     return body;
   };
 
+  const validateForm = () => {
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.address) {
+        setShowValidationErrors(true);
+        // Scroll to the top of the form
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+        alert("Please complete the required Customer Information (Name, Email, and Location) before generating a quote.");
+        return false;
+    }
+    setShowValidationErrors(false);
+    return true;
+  };
+
   const handleCopyQuote = () => {
+    if (!validateForm()) return;
     navigator.clipboard.writeText(generateFormattedQuoteBody());
     alert('Quote text copied to clipboard!');
   };
@@ -337,6 +381,7 @@ const Quote: React.FC = () => {
   };
 
   const handleDownloadPDF = async () => {
+    if (!validateForm()) return;
     const blob = await generatePDFBlob();
     if (!blob) {
         alert("Failed to generate PDF. Please try again.");
@@ -354,6 +399,8 @@ const Quote: React.FC = () => {
   };
 
   const handleEmail = async () => {
+    if (!validateForm()) return;
+
     // We render a special hidden HTML version of the quote (same design as user request)
     // and copy it to the clipboard as Rich Text (text/html). 
     // This allows the user to paste a fully designed table into Gmail.
@@ -650,6 +697,13 @@ const Quote: React.FC = () => {
                      {/* Customer Info */}
                      <div className="bg-white p-6 rounded-sm shadow-md border-t-4 border-brand-accent">
                          <h3 className="text-brand-dark font-bold uppercase tracking-widest text-sm mb-4 border-b border-gray-100 pb-2">Customer Information</h3>
+                         
+                         {showValidationErrors && (
+                             <div className="bg-red-50 text-red-600 text-xs p-3 rounded-sm mb-4 border border-red-200 font-bold flex items-center gap-2">
+                                 <AlertCircle className="w-4 h-4" /> Please fill in all required fields.
+                             </div>
+                         )}
+
                          <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Contact Name *</label>
@@ -657,7 +711,7 @@ const Quote: React.FC = () => {
                                     type="text" 
                                     value={customerInfo.name}
                                     onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 p-3 text-sm font-medium rounded-sm focus:outline-none focus:border-brand-accent"
+                                    className={`w-full bg-gray-50 border p-3 text-sm font-medium rounded-sm focus:outline-none focus:border-brand-accent ${showValidationErrors && !customerInfo.name ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                     placeholder="Enter full name"
                                 />
                             </div>
@@ -667,7 +721,7 @@ const Quote: React.FC = () => {
                                     type="email" 
                                     value={customerInfo.email}
                                     onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 p-3 text-sm font-medium rounded-sm focus:outline-none focus:border-brand-accent"
+                                    className={`w-full bg-gray-50 border p-3 text-sm font-medium rounded-sm focus:outline-none focus:border-brand-accent ${showValidationErrors && !customerInfo.email ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                     placeholder="name@example.com"
                                 />
                             </div>
@@ -694,12 +748,12 @@ const Quote: React.FC = () => {
 
                             {/* Map Integration */}
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Project Location</label>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Project Location *</label>
                                 
                                 {!showMap ? (
                                     <button 
                                         onClick={() => setShowMap(true)}
-                                        className="w-full bg-brand-light border-2 border-dashed border-gray-300 p-4 rounded-sm text-gray-500 hover:border-brand-accent hover:text-brand-accent transition-colors flex items-center justify-center gap-2"
+                                        className={`w-full bg-brand-light border-2 border-dashed p-4 rounded-sm text-gray-500 hover:border-brand-accent hover:text-brand-accent transition-colors flex items-center justify-center gap-2 ${showValidationErrors && !customerInfo.address ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300'}`}
                                     >
                                         <MapPin className="w-5 h-5" />
                                         <span>Pin Location on Map</span>
@@ -723,7 +777,7 @@ const Quote: React.FC = () => {
                                           </button>
                                         </form>
 
-                                        <div className="h-64 rounded-sm overflow-hidden border border-gray-300 relative z-0">
+                                        <div className={`h-64 rounded-sm overflow-hidden border relative z-0 ${showValidationErrors && !customerInfo.address ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'}`}>
                                             <MapContainer center={mapCenter} zoom={12} style={{ height: '100%', width: '100%' }}>
                                                 <TileLayer
                                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -744,9 +798,24 @@ const Quote: React.FC = () => {
                                     </div>
                                 )}
                                 {distanceKm > 0 && (
-                                    <div className="mt-2 text-xs flex items-center justify-between text-brand-dark bg-brand-accent/10 p-2 rounded-sm border border-brand-accent/20">
-                                        <span className="font-bold">Distance from HQ:</span>
-                                        <span className="font-mono">{distanceKm.toFixed(2)} km</span>
+                                    <div className="mt-2 text-xs bg-brand-accent/10 p-3 rounded-sm border border-brand-accent/20 relative group">
+                                         <button 
+                                            onClick={handleRemoveLocation}
+                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors p-1"
+                                            title="Remove Pin"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <div className="pr-6 mb-3">
+                                            <span className="font-bold text-brand-dark uppercase text-[10px] tracking-widest block mb-1">Pinned Location</span>
+                                            <p className="text-gray-700 font-medium leading-tight">{customerInfo.address}</p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-brand-accent/20 pt-2 border-dashed">
+                                            <span className="font-bold text-brand-dark">Distance from HQ:</span>
+                                            <span className="font-mono font-bold">{distanceKm.toFixed(2)} km</span>
+                                        </div>
                                     </div>
                                 )}
                             </div>

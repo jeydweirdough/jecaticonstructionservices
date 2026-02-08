@@ -149,7 +149,7 @@ const Home: React.FC = () => {
          </div>
          
          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredProjects.map((project, idx) => (
+            {featuredProjects.map((project) => (
                 <div key={project.id} className="group relative bg-white shadow-lg overflow-hidden border-b-4 border-brand-dark hover:border-brand-accent transition-all duration-300 hover:-translate-y-2">
                     <div className="h-72 overflow-hidden relative">
                         <img src={project.image} alt={project.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
