@@ -13,7 +13,9 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 
 // Fix Leaflet icons
+// @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
+
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -33,6 +35,14 @@ interface CartItem {
   quantity: number;
   hours: number;
   image: string;
+}
+
+interface CustomerInfo {
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  address: string;
 }
 
 // --- Helper Functions (Moved outside component for initialization logic) ---
@@ -113,7 +123,7 @@ const Quote: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   
   // Customer Info State - Initialized from LocalStorage
-  const [customerInfo, setCustomerInfo] = useState(() => {
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>(() => {
     const saved = localStorage.getItem('jecati_customer_info');
     return saved ? JSON.parse(saved) : {
       name: '',
@@ -188,7 +198,7 @@ const Quote: React.FC = () => {
     const fee = calculateMobilizationFee(dist);
     setMobilizationFee(fee);
     
-    setCustomerInfo(prev => ({
+    setCustomerInfo((prev: CustomerInfo) => ({
         ...prev, 
         address: displayName || `Pinned Location (${dist.toFixed(1)} km from HQ)`
     }));
