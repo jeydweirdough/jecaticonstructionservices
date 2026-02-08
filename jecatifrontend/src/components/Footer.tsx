@@ -1,6 +1,7 @@
 import React from 'react';
-import { CONTACT_INFO } from '../constants';
-import { Phone, Mail, Facebook, Instagram, Hammer } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { CONTACT_INFO, NAV_ITEMS } from '../constants';
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Hammer } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (

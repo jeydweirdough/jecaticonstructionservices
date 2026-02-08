@@ -96,13 +96,13 @@ export const PROJECTS: Project[] = [
   }
 ];
 
-// Equipment Pricing
+// Equipment Pricing (Hourly Rates calculated approx /8)
 export const EQUIPMENT: Equipment[] = [
   {
     id: 'e1',
     name: 'Komatsu',
     model: 'Excavator PC 20',
-    pricePerDay: 12000,
+    pricePerHour: 1500,
     category: 'heavy',
     image: 'https://picsum.photos/id/301/500/500',
     specs: ['Bucket Capacity: 0.09 m3', 'Operating Weight: 3 Tons']
@@ -111,7 +111,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e2',
     name: 'Komatsu',
     model: 'Excavator PC 30',
-    pricePerDay: 13500,
+    pricePerHour: 1700,
     category: 'heavy',
     image: 'https://picsum.photos/id/302/500/500',
     specs: ['Bucket Capacity: 0.11 m3', 'Operating Weight: 3.5 Tons']
@@ -120,7 +120,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e3',
     name: 'Komatsu',
     model: 'Excavator PC 60',
-    pricePerDay: 16000,
+    pricePerHour: 2000,
     category: 'heavy',
     image: 'https://picsum.photos/id/304/500/500',
     specs: ['Bucket Capacity: 0.25 m3', 'Operating Weight: 6.3 Tons']
@@ -129,7 +129,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e4',
     name: 'Caterpillar',
     model: 'D6 Bulldozer',
-    pricePerDay: 25000,
+    pricePerHour: 3125,
     category: 'heavy',
     image: 'https://picsum.photos/id/305/500/500',
     specs: ['Blade Width: 3.2m', 'Net Power: 120 kW']
@@ -138,7 +138,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e5',
     name: 'Isuzu',
     model: 'Mini Dump Truck',
-    pricePerDay: 5000,
+    pricePerHour: 625,
     category: 'transport',
     image: 'https://picsum.photos/id/306/500/500',
     specs: ['Load Capacity: 3 Tons', '4-Wheeler']
@@ -147,7 +147,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e6',
     name: 'Bobcat',
     model: 'Skid Steer S450',
-    pricePerDay: 9000,
+    pricePerHour: 1125,
     category: 'light',
     image: 'https://picsum.photos/id/307/500/500',
     specs: ['Rated Operating Capacity: 608kg', 'Tipping Load: 1215kg']
@@ -156,7 +156,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e7',
     name: 'Hitachi',
     model: 'Zaxis 200',
-    pricePerDay: 22000,
+    pricePerHour: 2750,
     category: 'heavy',
     image: 'https://picsum.photos/id/308/500/500',
     specs: ['Bucket Capacity: 0.8 m3', 'Operating Weight: 20 Tons']
@@ -165,7 +165,7 @@ export const EQUIPMENT: Equipment[] = [
     id: 'e8',
     name: 'Sakai',
     model: 'Vibratory Roller',
-    pricePerDay: 8500,
+    pricePerHour: 1100,
     category: 'heavy',
     image: 'https://picsum.photos/id/309/500/500',
     specs: ['Drum Width: 1.7m', 'Centrifugal Force: 260 kN']
@@ -177,27 +177,27 @@ export const LABOR_RATES: ServiceRate[] = [
     id: 'l1',
     role: 'Skilled Labor',
     description: 'Experienced masons, carpenters, or welders.',
-    rate: '800',
-    priceNumeric: 800,
-    unit: 'per day',
+    rate: '100',
+    priceNumeric: 100,
+    unit: 'per hour',
     image: 'https://picsum.photos/id/401/400/300'
   },
   {
     id: 'l2',
     role: 'Helper / Laborer',
     description: 'General construction assistance and site clearing.',
-    rate: '600',
-    priceNumeric: 600,
-    unit: 'per day',
+    rate: '75',
+    priceNumeric: 75,
+    unit: 'per hour',
     image: 'https://picsum.photos/id/402/400/300'
   },
   {
     id: 'l3',
     role: 'Site Foreman',
     description: 'Project supervision and team management.',
-    rate: '1,200',
-    priceNumeric: 1200,
-    unit: 'per day',
+    rate: '150',
+    priceNumeric: 150,
+    unit: 'per hour',
     image: 'https://picsum.photos/id/403/400/300'
   },
   {

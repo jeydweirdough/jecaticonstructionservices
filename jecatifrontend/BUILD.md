@@ -32,3 +32,8 @@ npm ls react-dom
 ```bash
 npm dedupe
 ```
+
+* Added google maps
+
+```bash
+npm install react-leaflet@4.2.1 leaflet

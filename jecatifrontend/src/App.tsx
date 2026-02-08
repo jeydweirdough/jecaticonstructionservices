@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -8,6 +9,7 @@ import Services from './pages/Services';
 import Projects from './pages/Projects';
 import Contact from './pages/Contact';
 import Pricing from './pages/Pricing';
+import Quote from './pages/Quote';
 
 // Scroll to top wrapper
 const ScrollToTop = () => {
@@ -33,8 +35,8 @@ const App: React.FC = () => {
             <Route path="/services" element={<Services />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/contact" element={<Contact />} />
-            {/* Adding Pricing as a sub-route or accessible route since it was in design */}
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/quote" element={<Quote />} />
           </Routes>
         </main>
         <Footer />

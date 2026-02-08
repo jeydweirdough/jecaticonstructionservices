@@ -1,11 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { EQUIPMENT, LABOR_RATES, CONTACT_INFO } from '../constants';
-import { Truck, HardHat, ChevronDown, Plus, Minus, Trash2, Download, Share2, Copy, FileText, X } from 'lucide-react';
-// @ts-ignore
-import html2canvas from 'html2canvas';
-// @ts-ignore
-import { jsPDF } from 'jspdf';
+import { NavLink } from 'react-router-dom';
+import { EQUIPMENT, LABOR_RATES } from '../constants';
+import { Truck, HardHat, ChevronDown, FileText, Check } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -14,13 +11,14 @@ interface CartItem {
   priceNumeric: number | null;
   displayPrice: string;
   quantity: number;
-  days: number;
+  hours: number;
   image: string;
 }
 
 const Pricing: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'equipment' | 'services'>('equipment');
   const [visibleCount, setVisibleCount] = useState(6);
+  const [showAddedToast, setShowAddedToast] = useState(false);
   
   // Initialize cart from localStorage
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -28,8 +26,6 @@ const Pricing: React.FC = () => {
     return savedCart ? JSON.parse(savedCart) : [];
   });
   
-  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
-
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('jecati_quote_cart', JSON.stringify(cart));
@@ -43,7 +39,8 @@ const Pricing: React.FC = () => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
-        setIsQuoteOpen(true);
+        setShowAddedToast(true);
+        setTimeout(() => setShowAddedToast(false), 2000);
         return prev;
       }
       
@@ -51,177 +48,22 @@ const Pricing: React.FC = () => {
         id: item.id,
         name: type === 'equipment' ? item.model : item.role,
         category: type,
-        priceNumeric: type === 'equipment' ? item.pricePerDay : item.priceNumeric || null,
-        displayPrice: type === 'equipment' ? item.pricePerDay.toLocaleString() : item.rate,
+        priceNumeric: type === 'equipment' ? item.pricePerHour : item.priceNumeric || null,
+        displayPrice: type === 'equipment' ? item.pricePerHour.toLocaleString() : item.rate,
         quantity: 1,
-        days: 1,
+        hours: 8, // Default to 8 hours (1 day shift)
         image: item.image
       };
       
-      setIsQuoteOpen(true);
+      setShowAddedToast(true);
+      setTimeout(() => setShowAddedToast(false), 2000);
       return [...prev, newItem];
     });
-  };
-
-  const removeFromQuote = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateCartItem = (id: string, field: 'quantity' | 'days', value: number) => {
-    if (value < 1) return;
-    setCart(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((acc, item) => {
-      if (item.priceNumeric) {
-        return acc + (item.priceNumeric * item.quantity * item.days);
-      }
-      return acc;
-    }, 0);
-  };
-
-  const generateQuoteText = () => {
-    let text = `*Jecati Construction Services - Quotation Inquiry*\n\n`;
-    text += `*Date:* ${new Date().toLocaleDateString()}\n\n`;
-    text += `*Items:*\n`;
-    
-    cart.forEach(item => {
-      text += `• ${item.name} (${item.category})\n`;
-      text += `  Qty: ${item.quantity} | Days: ${item.days}\n`;
-      if (item.priceNumeric) {
-        text += `  Subtotal: ₱${(item.priceNumeric * item.quantity * item.days).toLocaleString()}\n`;
-      } else {
-        text += `  Price: Ask for Quote\n`;
-      }
-      text += `\n`;
-    });
-
-    const total = calculateTotal();
-    text += `*Total Estimated:* ₱${total.toLocaleString()}\n`;
-    text += `(Note: Final price subject to confirmation)\n\n`;
-    text += `Please let me know the availability.`;
-    
-    return text;
-  };
-
-  const handleCopyQuote = () => {
-    navigator.clipboard.writeText(generateQuoteText());
-    alert('Quote copied to clipboard!');
-  };
-
-  const handleWhatsApp = () => {
-    const phone = CONTACT_INFO.phone.replace(/\s/g, '').replace(/^0/, '63');
-    const text = encodeURIComponent(generateQuoteText());
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
-  };
-
-  const handleDownloadPDF = async () => {
-    const input = document.getElementById('printable-quote');
-    if (!input) return;
-    
-    // Create a clone to render
-    const clone = input.cloneNode(true) as HTMLElement;
-    
-    // Reset styles to ensure visibility for capture
-    clone.className = "p-12 bg-white text-black"; // Reset classes
-    clone.style.display = 'block';
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.width = '210mm'; // A4 width
-    
-    document.body.appendChild(clone);
-
-    try {
-        const canvas = await html2canvas(clone, {
-            scale: 2, // Better resolution
-            useCORS: true,
-            logging: false
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfImgHeight);
-        pdf.save(`Jecati_Quote_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (err) {
-        console.error("PDF generation failed", err);
-        alert("Failed to generate PDF. Please try again.");
-    } finally {
-        document.body.removeChild(clone);
-    }
   };
 
   return (
     <div className="bg-gray-50 min-h-screen relative">
        
-       {/* Printable Quote Section (Hidden used for PDF generation) */}
-       <div id="printable-quote" className="hidden p-8 bg-white text-black">
-          <div className="flex justify-between items-center border-b-2 border-brand-dark pb-6 mb-8">
-              <div>
-                  <h1 className="text-3xl font-black uppercase">Jecati Construction</h1>
-                  <p className="text-sm text-gray-600 mt-2">{CONTACT_INFO.address}</p>
-                  <p className="text-sm text-gray-600">{CONTACT_INFO.phone} | {CONTACT_INFO.email}</p>
-              </div>
-              <div className="text-right">
-                  <h2 className="text-xl font-bold uppercase text-brand-accent">Quotation Estimate</h2>
-                  <p className="text-sm mt-1">Date: {new Date().toLocaleDateString()}</p>
-              </div>
-          </div>
-
-          <table className="w-full text-left mb-8 border-collapse">
-              <thead>
-                  <tr className="bg-gray-100 border-b border-gray-300">
-                      <th className="p-3 font-bold uppercase text-sm">Item</th>
-                      <th className="p-3 font-bold uppercase text-sm">Type</th>
-                      <th className="p-3 font-bold uppercase text-sm text-right">Rate</th>
-                      <th className="p-3 font-bold uppercase text-sm text-center">Qty</th>
-                      <th className="p-3 font-bold uppercase text-sm text-center">Days</th>
-                      <th className="p-3 font-bold uppercase text-sm text-right">Subtotal</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  {cart.map((item) => (
-                      <tr key={item.id} className="border-b border-gray-200">
-                          <td className="p-3">{item.name}</td>
-                          <td className="p-3 capitalize">{item.category}</td>
-                          <td className="p-3 text-right">
-                              {item.priceNumeric ? `₱${item.priceNumeric.toLocaleString()}` : 'TBD'}
-                          </td>
-                          <td className="p-3 text-center">{item.quantity}</td>
-                          <td className="p-3 text-center">{item.days}</td>
-                          <td className="p-3 text-right font-bold">
-                              {item.priceNumeric 
-                                ? `₱${(item.priceNumeric * item.quantity * item.days).toLocaleString()}` 
-                                : 'Ask for Quote'}
-                          </td>
-                      </tr>
-                  ))}
-              </tbody>
-          </table>
-
-          <div className="flex justify-end">
-              <div className="w-1/2 border-t-2 border-brand-dark pt-4">
-                  <div className="flex justify-between items-center">
-                      <span className="font-bold text-xl uppercase">Total Estimate:</span>
-                      <span className="font-black text-2xl">₱{calculateTotal().toLocaleString()}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-4 italic">
-                      * This is an automated estimate. Final pricing may vary based on site location, specific requirements, and availability. 
-                  </p>
-              </div>
-          </div>
-       </div>
-
        {/* Screen Only Content */}
        <div className="">
             {/* Pricing Hero */}
@@ -237,7 +79,7 @@ const Pricing: React.FC = () => {
                         Pricing & <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-yellow-200">Rentals</span>
                     </h1>
                     <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
-                        Select equipment and services to build an instant quotation. Download or send it directly to our team.
+                        Select equipment and services to build an instant quotation.
                     </p>
                 </div>
             </div>
@@ -308,10 +150,10 @@ const Pricing: React.FC = () => {
                                         <div className="border-t border-gray-100 pt-6">
                                             <div className="flex items-end justify-between mb-4">
                                                     <div>
-                                                        <span className="text-xs text-gray-400 font-bold uppercase block mb-1">Daily Rate</span>
+                                                        <span className="text-xs text-gray-400 font-bold uppercase block mb-1">Hourly Rate</span>
                                                         <div className="flex items-baseline text-brand-dark">
                                                             <span className="text-lg font-bold">₱</span>
-                                                            <span className="text-3xl font-black tracking-tight">{item.pricePerDay.toLocaleString()}</span>
+                                                            <span className="text-3xl font-black tracking-tight">{item.pricePerHour.toLocaleString()}</span>
                                                         </div>
                                                     </div>
                                             </div>
@@ -379,8 +221,8 @@ const Pricing: React.FC = () => {
 
             {/* Floating Quote Button */}
             <div className="fixed bottom-8 right-8 z-40">
-                <button 
-                    onClick={() => setIsQuoteOpen(true)}
+                <NavLink 
+                    to="/quote"
                     className="relative bg-brand-accent text-brand-dark p-4 rounded-sm shadow-2xl hover:scale-105 transition-transform flex items-center gap-3 pr-6 font-bold uppercase tracking-wide border-2 border-white"
                 >
                     <div className="relative">
@@ -391,163 +233,15 @@ const Pricing: React.FC = () => {
                             </span>
                         )}
                     </div>
-                    <span>My Quote</span>
-                </button>
+                    <span>View Quote</span>
+                </NavLink>
             </div>
-
-            {/* Quote Drawer / Modal */}
-            {isQuoteOpen && (
-                <div className="fixed inset-0 z-50 flex justify-end">
-                    {/* Backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-                        onClick={() => setIsQuoteOpen(false)}
-                    ></div>
-
-                    {/* Drawer Content */}
-                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-fade-in">
-                        <div className="p-6 bg-brand-dark text-white flex justify-between items-center shadow-md">
-                            <div>
-                                <h2 className="text-xl font-black uppercase flex items-center gap-2">
-                                    <FileText className="text-brand-accent" /> Quote Builder
-                                </h2>
-                                <p className="text-xs text-gray-400 mt-1">{cart.length} Items Selected</p>
-                            </div>
-                            <button onClick={() => setIsQuoteOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        {/* Cart Items List */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                            {cart.length === 0 ? (
-                                <div className="text-center py-12 text-gray-400">
-                                    <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <FileText className="w-8 h-8 text-gray-300" />
-                                    </div>
-                                    <p>Your quote list is empty.</p>
-                                    <p className="text-sm mt-2">Add equipment or services to start building your quote.</p>
-                                    <button 
-                                        onClick={() => setIsQuoteOpen(false)}
-                                        className="mt-6 text-brand-accent font-bold uppercase text-xs tracking-widest hover:underline"
-                                    >
-                                        Browse Items
-                                    </button>
-                                </div>
-                            ) : (
-                                cart.map(item => (
-                                    <div key={item.id} className="bg-gray-50 rounded-sm p-4 border border-gray-200 relative group">
-                                        <button 
-                                            onClick={() => removeFromQuote(item.id)}
-                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                        
-                                        <div className="flex gap-4 mb-4">
-                                            <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-sm bg-white" />
-                                            <div>
-                                                <span className="text-[10px] font-bold uppercase text-brand-accent tracking-widest">{item.category}</span>
-                                                <h3 className="font-bold text-brand-dark leading-tight">{item.name}</h3>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Rate: {item.priceNumeric ? `₱${item.priceNumeric.toLocaleString()}` : item.displayPrice}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Quantity</label>
-                                                <div className="flex items-center bg-white border border-gray-300 rounded-sm">
-                                                    <button 
-                                                        onClick={() => updateCartItem(item.id, 'quantity', item.quantity - 1)}
-                                                        className="p-1.5 hover:bg-gray-100 text-gray-600"
-                                                    >
-                                                        <Minus className="w-3 h-3" />
-                                                    </button>
-                                                    <input 
-                                                        type="number" 
-                                                        value={item.quantity} 
-                                                        readOnly 
-                                                        className="w-full text-center text-sm font-bold text-brand-dark focus:outline-none" 
-                                                    />
-                                                    <button 
-                                                        onClick={() => updateCartItem(item.id, 'quantity', item.quantity + 1)}
-                                                        className="p-1.5 hover:bg-gray-100 text-gray-600"
-                                                    >
-                                                        <Plus className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Duration (Days)</label>
-                                                <div className="flex items-center bg-white border border-gray-300 rounded-sm">
-                                                    <button 
-                                                        onClick={() => updateCartItem(item.id, 'days', item.days - 1)}
-                                                        className="p-1.5 hover:bg-gray-100 text-gray-600"
-                                                    >
-                                                        <Minus className="w-3 h-3" />
-                                                    </button>
-                                                    <input 
-                                                        type="number" 
-                                                        value={item.days} 
-                                                        readOnly 
-                                                        className="w-full text-center text-sm font-bold text-brand-dark focus:outline-none" 
-                                                    />
-                                                    <button 
-                                                        onClick={() => updateCartItem(item.id, 'days', item.days + 1)}
-                                                        className="p-1.5 hover:bg-gray-100 text-gray-600"
-                                                    >
-                                                        <Plus className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-
-                        {/* Footer Totals & Actions */}
-                        {cart.length > 0 && (
-                            <div className="p-6 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                                <div className="flex justify-between items-end mb-6">
-                                    <span className="text-sm font-bold text-gray-500 uppercase">Estimated Total</span>
-                                    <div className="text-right">
-                                        <span className="block text-3xl font-black text-brand-dark">₱{calculateTotal().toLocaleString()}</span>
-                                        <span className="text-xs text-gray-400">*Excluding specific delivery charges</span>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button 
-                                        onClick={handleCopyQuote}
-                                        className="col-span-1 flex flex-col items-center justify-center p-3 rounded-sm bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                                        title="Copy to Clipboard"
-                                    >
-                                        <Copy className="w-5 h-5 mb-1" />
-                                        <span className="text-[10px] font-bold uppercase">Copy</span>
-                                    </button>
-                                    <button 
-                                        onClick={handleDownloadPDF}
-                                        className="col-span-1 flex flex-col items-center justify-center p-3 rounded-sm bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                                        title="Download PDF Copy"
-                                    >
-                                        <Download className="w-5 h-5 mb-1" />
-                                        <span className="text-[10px] font-bold uppercase">PDF Copy</span>
-                                    </button>
-                                    <button 
-                                        onClick={handleWhatsApp}
-                                        className="col-span-1 flex flex-col items-center justify-center p-3 rounded-sm bg-green-500 hover:bg-green-600 text-white transition-colors"
-                                        title="Send via WhatsApp"
-                                    >
-                                        <Share2 className="w-5 h-5 mb-1" />
-                                        <span className="text-[10px] font-bold uppercase">WhatsApp</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+            
+            {/* Added Toast */}
+            {showAddedToast && (
+                <div className="fixed bottom-24 right-8 z-50 bg-brand-dark text-white px-4 py-3 rounded-sm shadow-lg flex items-center gap-2 animate-fade-in">
+                    <Check className="w-4 h-4 text-green-400" />
+                    <span className="text-sm font-bold">Item added to quote</span>
                 </div>
             )}
        </div>

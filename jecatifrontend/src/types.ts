@@ -19,7 +19,7 @@ export interface Equipment {
   id: string;
   name: string;
   model: string;
-  pricePerDay: number;
+  pricePerHour: number;
   image: string;
   category: 'heavy' | 'transport' | 'light';
   specs?: string[];
